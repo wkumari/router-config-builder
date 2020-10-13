@@ -4,15 +4,20 @@ This reads a set of variables (usually in `./vars/*.yaml`) and templates and bui
 
 The variables are written in [YAML](https://learn.getgrav.org/15/advanced/yaml), and the configlets (templates) are written in [Jinja2](http://jinja.pocoo.org).
 
-The general design that we update the variables files with the new information for each meeting (interface configs, BGP configs, etc), run the `build.py` script, and copy and paste the resulting config into the device (now actually deployed with Ansible). The current set of templates builds JunOS, but could equally build Ubiquiti, Cisco, Arista, etc. 
+The general design that we update the variables files with the new information for each meeting (interface configs, BGP configs, etc), run the `build.py` script, and copy and paste the resulting config into the device (now actually deployed with Ansible). The current set of templates builds JunOS, but could equally build Ubiquiti, Cisco, Arista, etc.
 
 
 
-This was originally written to build JunOS router configs for the IETF Meeting network. We kept running into issues where the config would slowly drift over the course of the meeting. When we'd unpack the gear at the start of the next meeting we'd have to remember what had changed and why, figure out what needed to be updated for this meeting, etc. The would generally take many many hours of faffing - with the templated config, it's now a few minutes. 
+This was originally written to build JunOS router configs for the IETF Meeting network. We kept running into issues where the config would slowly drift over the course of the meeting. When we'd unpack the gear at the start of the next meeting we'd have to remember what had changed and why, figure out what needed to be updated for this meeting, etc. The would generally take many many hours of faffing - with the templated config, it's now a few minutes.
 
 ## Quick start:
 
-**Note**: This should generally be run from the same directory where the templates are, as it makes tab-completion work. 
+**Note**: This should generally be run from the same directory where the templates are, as it makes tab-completion work.
+
+This has been extended to use templates in the directory you are calling from (cwd), and
+if not found, then a template in `<script_dir>/<platform>` where platform
+defaults to JunOS. This allows one to have base templates and replace them with
+sire specific ones. Currently very few are actually base...
 
 ```bash
 $ ./build.py -r rtra all.j2
@@ -27,7 +32,7 @@ system {
 
 ## Variables
 
-##### Everything which changes should be in a variable. 
+##### Everything which changes should be in a variable.
 
 Variables are all stored in YAML files. Here is an example:
 
@@ -63,7 +68,7 @@ system {
 }
 ```
 
-Things in braces (`{{ }}`) are **variables**, and get replaced with the values when the template is rendered. In this example, the `{{ hostname }}` will be replaced with the value of the variable called `hostname`. 
+Things in braces (`{{ }}`) are **variables**, and get replaced with the values when the template is rendered. In this example, the `{{ hostname }}` will be replaced with the value of the variable called `hostname`.
 
 Often there are repeated parts of a config (e.g users). These are implemented using loops:
 
@@ -73,7 +78,7 @@ Often there are repeated parts of a config (e.g users). These are implemented us
         {%- endfor %}
 ```
 
-This will loop over the array called nameservers, handing in a nameserver each time. 
+This will loop over the array called nameservers, handing in a nameserver each time.
 
 Often there are **optional** parts of a config, and we only want to include this if the variable is defined. Examples of this are things like BGP Multihop - here is an example:
 
@@ -86,7 +91,7 @@ Often there are **optional** parts of a config, and we only want to include this
 
 This will add the `multihop { ttl <number>}` bit if, and only if the variable `peer.neighbor_multihop` exists. Note that the way the script is currently configured (`undefined=StrictUndefined`), rendering the template will fail if you try and use an undefined variable.
 
-**Note**: While it may be tempting to change this to allow undefined variables, this is a very bad idea - it will allow creating configs with bits missing, and silent failures. 
+**Note**: While it may be tempting to change this to allow undefined variables, this is a very bad idea - it will allow creating configs with bits missing, and silent failures.
 
 
 
@@ -122,7 +127,7 @@ chassis {
 
 # Examples
 
-Even though the variables / parameters files are mostly boring ("Oh! IPs in YAML, yawn.."), some examples are provided to help make the template examples more understandable.  These have been edited for brevity. 
+Even though the variables / parameters files are mostly boring ("Oh! IPs in YAML, yawn.."), some examples are provided to help make the template examples more understandable.  These have been edited for brevity.
 
 `global.yaml`
 
@@ -138,7 +143,7 @@ nameservers:
 aggregates_v4:
   - "31.133.128.0/18"
   - "31.130.224.0/20"
-  
+
 # Note: Templates assume that we do the same things for OSPF and OSPF3
 # Don't forget the unit number!
 # This gets applied with an apply-macro
@@ -178,7 +183,7 @@ transits:
   mac: 02:1e:7f:00:00:02
   v4: 206.108.20.81/29
   v6: 2001:569:FFF:0:0:0:0:58/127
-  
+
 peers:
 - desc: "Telus1"
   neighbor_v4: 207.194.244.1

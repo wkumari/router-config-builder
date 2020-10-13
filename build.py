@@ -127,6 +127,9 @@ conventions:
     options.add_option('-t', '--templates', dest='template_dir',
                        default=".",
                        help='Directory containing templates. Default "."')
+    options.add_option('-p', '--platform', dest='platform',
+                       default="junos",
+                       help='Directory containing *base* templates. Default "junos"')
 
     (opts, args) = options.parse_args()
     if not args:
@@ -197,10 +200,14 @@ def open_template(path, name):
 
     # If we are called with a file called <something.yaml> (e.g because of
     # tab completion), strip it to get the base name.
-    base=os.path.basename(name)
+    base = os.path.basename(name)
     name = os.path.splitext(base)[0]
 
-    env = Environment(loader = FileSystemLoader(path),
+    # Script dir
+    script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+    env = Environment(loader = FileSystemLoader([path,
+            os.path.join(script_dir, opts.platform)]),
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
