@@ -10,8 +10,6 @@ The general design that we update the variables files with the new information f
 
 This was originally written to build JunOS router configs for the IETF Meeting network. We kept running into issues where the config would slowly drift over the course of the meeting. When we'd unpack the gear at the start of the next meeting we'd have to remember what had changed and why, figure out what needed to be updated for this meeting, etc. The would generally take many many hours of faffing - with the templated config, it's now a few minutes. 
 
-
-
 ## Quick start:
 
 **Note**: This should generally be run from the same directory where the templates are, as it makes tab-completion work. 
