@@ -1,5 +1,7 @@
 #  Router Config Builder
 
+[TOC]
+
 This reads a set of variables (usually in `./vars/*.yaml`) and templates and builds configurations. This was originally written to build Juniper router configs, but has been used to do all sorts of templating, etc.
 
 The variables are written in [YAML](https://learn.getgrav.org/15/advanced/yaml), and the configlets (templates) are written in [Jinja2](http://jinja.pocoo.org).
@@ -10,9 +12,13 @@ The general design that we update the variables files with the new information f
 
 This was originally written to build JunOS router configs for the IETF Meeting network. We kept running into issues where the config would slowly drift over the course of the meeting. When we'd unpack the gear at the start of the next meeting we'd have to remember what had changed and why, figure out what needed to be updated for this meeting, etc. The would generally take many many hours of faffing - with the templated config, it's now a few minutes.
 
+
+
 ## Quick start:
 
 **Note**: This should generally be run from the same directory where the templates are, as it makes tab-completion work.
+
+See also 
 
 This has been extended to use templates in the directory you are calling from (cwd), and
 if not found, then a template in `<script_dir>/<platform>` where platform
@@ -28,11 +34,9 @@ system {
     ...
 ```
 
-
-
 ## Variables
 
-##### Everything which changes should be in a variable.
+**NOTE: Everything which changes should be in a variable.**
 
 Variables are all stored in YAML files. Here is an example:
 
@@ -93,8 +97,6 @@ This will add the `multihop { ttl <number>}` bit if, and only if the variable `p
 
 **Note**: While it may be tempting to change this to allow undefined variables, this is a very bad idea - it will allow creating configs with bits missing, and silent failures.
 
-
-
 ### Including other templates
 
 Having one huge template with all of the configlets in it would quickly become unmanageable, and so it is generally a good idea to split the config into multiple sections, and then have a master template which includes the others. Obviously you can nest this, so I generally have e.g. an `all.j2` template, which includes `protocols.j2`, which in turn includes `protocols-bgp.j2`,  `protocols-lldp.j2`,  `protocols-ospf.j2`, ... (the naming is simply convention, to help make it easier to remember where things fit, and so e.g `ls proto*` gives helpful results).
@@ -122,6 +124,76 @@ chassis {
 ```
 
 
+
+## Folder layout
+
+A number of people have expressed confusion around the folder layout and template inheritance / overriding templates. To understand this, some background is helpful. 
+
+This was originally written to generate configs for a single use (the IETF Meeting network). I then started using it to build configs for my own boxes, and then for some other projects, etc. I was doing this by having a single binary, and symlinking it into each project. I'd then copy all of the templates from the last project, and start futzing with them. This was annoying.
+
+When I broke [router-config-builder](https://github.com/wkumari/router-config-builder) out into its own repo I wanted some way to make it easier for people to start using it, and also for me to make are projects, without having to copy the templates, track what is specific to each project, etc.
+
+The design therefore now uses search paths to find each template. When referencing a template like `example.j2`, it will first search in the current directory, and if not found, it will then look in a platform specific directory (defaults to `junos`) in whatever directory the script lives. This means that you can add the [router-config-builder](https://github.com/wkumari/router-config-builder) submodule, and *override* any of the provided templates if needed. 
+
+Here is an example (*at a repo which includes this repo as a submodule*):
+
+```
+.
+├── commit-scripts
+│   ├── int-addr-v4.slax
+│   ├── int-addr-v6.slax
+│   └── ospf-passive.slax
+├── login.j2
+├── protocols.j2
+├── router-config-builder
+│   ├── README.md
+│   ├── build.py
+│   └── junos
+│       ├── all.j2
+│       ├── chassis-ex4200.j2
+│       ├── chassis-mx104.j2
+│       ├── chassis-mx204.j2
+│       ├── chassis-mx240.j2
+│       ├── chassis.j2
+│       ├── interfaces.j2
+│       ├── protocols.j2
+│       ├── system.j2
+│       ├── system_services.j2
+│       └── system_syslog.j2
+├── system_services.j2
+├── system_syslog.j2
+└── vars
+    ├── global.yaml
+    ├── rtr1_device_specific.yaml
+    └── rtr2_device_specific.yaml
+```
+
+
+
+In this example, I'm using the base `all, chassis, interfaces, system` templates, but I'm overriding and using my own (not in this git repo!) `login, system_services, system_syslog` templates, because they a: have confidential stuff (login), or are sufficiently odd that they should not exist in the base ones.
+
+ 
+
+**More info:**
+
+* **commit-scripts** This contains JunOS SLAX commit scripts. They do clever things like make firewall filters which match on interface IPs, automatically include interfaces in OSPF, etc. I'm considering adding them to the this repo.
+* **login.j2** This contains the system login config stanza, including ssh keys, hashed passwords, etc. It doesn't go in this repo.
+* **protocols.j2** I do (for the purpose of this example) some wild and crazy things with protocols. They are sufficiently odd that they are not based on the "base" templates, and should not be included in the "base" distribution. As a file called protocols.j2 exists in both this, and the `router-config-builder/junos` folder, this one will take precedence. 
+* **router-config-builder** This is this repo. It is included in the parent repo (ie. `git submodule add git@github.com:wkumari/router-config-builder.git` )
+* **router-config-builder/junos** These are the base (included) templates
+* **router-config-builder/junos/protocols.j2**  This file is ignored, as there is a protocols.j2 in the "parent".
+* **vars** This directory contains the YAML variables / parameters. `global.j2` applies to all devices, and `rtr1_device_specific.yaml` is only applied to a device called (invoked with `-r` rtr1.
+
+While this may seem complex, it really isn't - perhaps the below will make it clearer:
+
+```python
+   script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+    env = Environment(loader = FileSystemLoader([path,
+            os.path.join(script_dir, opts.platform)]),
+        ...
+        )
+```
 
 
 
