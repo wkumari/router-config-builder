@@ -1,0 +1,167 @@
+## interfaces_internal.j2
+replace:
+interfaces {
+    {%- for link in interfaces %}
+    {{ link.interface }} {
+        description "{{ link.desc}}";
+        {%- if link.disable is defined and link.disable is sameas true %}
+        disable;
+        {%- endif %} {# link.disable #}
+        {%- if link.mtu is defined %}
+        mtu {{ link.mtu }};
+        {%- endif %} {# link.mtu #}
+        {%- if link.flexible is defined and link.flexible is sameas true %}
+        flexible-vlan-tagging;
+          {%- if link.native_vlan_id is defined %}
+        native-vlan-id {{link.native_vlan_id }};
+          {%- endif %} {# link.native_vlan_id #}
+        {%- endif %} {# link.flexible #}
+        {%- if link.speed is defined %}
+            speed {{ link.speed }};
+        {%- endif %} {# link.speed #}
+        {%- if link.mac is defined %}
+        mac {{ link.mac }};
+        {%- endif %} {# switch speed config is in a differnt place. #}
+        {%- if link.switch_speed is defined %}
+        ether-options {
+            speed {
+                100m;
+            }
+        }
+        {%- endif %} {# link.switch_speed #}
+        {%- if link.gigether_options is defined %}
+            gigether-options {
+                {%- if link.gigether_options.auto_negotiation is defined and link.gigether_options.auto_negotiation is sameas true %}
+                auto-negotiation;
+                {%- endif %}
+                {%- if link.gigether_options.speed is defined %}
+                speed {{ link.gigether_options.speed }};
+                {%- endif %}
+                }
+
+        {%- endif %} {# gig_ether #}
+        {%- if link.units is defined %} {%- for unit in link.units %}
+        unit {{ unit.id }} {
+            {%- if unit.desc is defined %}
+            description "{{ unit.desc }}";
+            {%- endif %}
+            {%- if unit.vlan_id is defined %}
+            vlan-id {{ unit.vlan_id }};
+            {%- endif %}
+            {%- if unit.proxy_arp is defined %}
+            proxy-arp unrestricted;
+            {%- endif %}
+            {%- if unit.v4 is defined %}
+            family inet {
+                {%- if unit.filters is defined %}
+                {%- if unit.filters.input is defined or unit.filters.output is defined %}
+                filter {
+                    {%- if unit.filters.input is defined %}
+                    input {{ unit.filters.input }};
+                    {%- endif %}
+                    {%- if unit.filters.output is defined %}
+                    output {{ unit.filters.output }};
+                    {%- endif %}
+                }
+                {%- endif %} {# if unit.filters.input #}
+                {%- endif %} {# if link filters #}
+                {%- if unit.sampling is defined %}  {# almost identical to filters #}
+                {%- if unit.sampling.input is defined or unit.sampling.output is defined %}
+                sampling {
+                    {%- if unit.sampling.input is defined and unit.sampling.input is sameas true %}
+                    input;
+                    {%- endif %}
+                    {%- if unit.sampling.output is defined and unit.sampling.output is sameas true %}
+                    output;
+                    {%- endif %}
+                }
+                {%- endif %} {# if unit.sampling.input #}
+                {%- endif %} {# if link sampling #}
+                {%- if unit.vrrp is defined and unit.vrrp.v4 is defined %}
+                address {{ unit.v4 }} {
+                    vrrp-group {{ unit.vrrp.group }} {
+                        virtual-address {{ unit.vrrp.v4 }};
+                        {%- if vrrp_priority is defined %} {# Device level setting #}
+                        priority {{ vrrp_priority }};
+                        {%- endif %}
+                        accept-data;
+                    }
+                }
+                {%- else %}
+                address {{ unit.v4 }};
+                {%- endif %}
+            }
+            {%- endif %}  {# if unit.v4 is defined #}
+            {%- if unit.v6 is defined %}
+            family inet6 {
+                {%- if unit.filters is defined %}
+                {%- if unit.filters.input_v6 is defined or unit.filters.output_v6 is defined %}
+                filter {
+                    {%- if unit.filters.input_v6 is defined %}
+                    input {{ unit.filters.input_v6 }};
+                    {%- endif %}
+                    {%- if unit.filters.output_v6 is defined %}
+                    input {{ unit.filters.output_v6 }};
+                    {%- endif %}
+                }
+                {%- endif %} {# if unit.filters.input_v6 #}
+                {%- endif %} {# if link filters #}
+                {%- if unit.sampling is defined %}  {# almost identical to filters #}
+                {%- if unit.sampling.input_v6 is defined or unit.sampling.output_v6 is defined %}
+                sampling {
+                    {%- if unit.sampling.input_v6 is defined and unit.sampling.input_v6 is sameas true %}
+                    input;
+                    {%- endif %}
+                    {%- if unit.sampling.output_v6 is defined and unit.sampling.output_v6 is sameas true %}
+                    output;
+                    {%- endif %}
+                }
+                {%- endif %} {# if unit.sampling.input_v6 #}
+                {%- endif %} {# if link sampling #}
+                {%- if unit.vrrp is defined and unit.vrrp.v6 is defined %}
+                address {{ unit.v6 }} {
+                    vrrp-group {{ unit.vrrp.group }} {
+                        virtual-inet6-address {{ unit.vrrp.v6 }};
+                        {%- if unit.vrrp.v6_ll is defined %}
+                        virtual-link-local-address {{ unit.vrrp.v6_ll }};{% endif %}
+                        {%- if vrrp_priority is defined %} {# Device level setting #}
+                        priority {{ vrrp_priority }};
+                        {%- endif %}
+                        accept-data;
+                    }
+                }
+                {%- else %}
+                address {{ unit.v6 }};
+                {%- endif %}
+            }
+            {%- endif %}  {# if unit.v6 is defined #}
+            {%- if unit.isis is defined and unit.isis is sameas true %}
+            family iso {
+                {%- if unit.iso is defined %}
+                address {{ unit.iso }};
+                {%- endif %}
+            }
+            {%- endif %}
+            {%- if unit.vlans is defined %}
+            family ethernet-switching {
+                {%- if unit.port_mode is defined %}
+                port-mode {{ unit.port_mode }};
+                {%- endif %}
+                vlan  {
+                    {# If ther is only one vlan, we generate "members XXX;" else "members [XXX, YYY, ]" #}
+                    {%- if unit.vlans|count == 1 %}
+                    members {{ unit.vlans[0] }};
+                    {%- else %}
+                    members [ {% for vlan in unit.vlans -%} {{ vlan }} {% endfor %} ]
+                    {%- endif %}
+                }
+                {%- if unit.native_vlan_id is defined %}
+                native-vlan-id {{ unit.native_vlan_id }};  {# switches set this in ethernet-switching... #}
+                {%- endif %}
+            }
+            {%- endif %}  {# if link.vlans is defined #}
+        }
+            {%- endfor %} {%- endif %} {# if link.units is defined and for unit in link.units #}
+    }
+    {%- endfor %}
+}
