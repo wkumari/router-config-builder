@@ -1,0 +1,25 @@
+    ## system_syslog.j2
+    replace:
+    syslog {
+        user * {
+            any emergency;
+        }
+        {%- for server in syslog %}
+        host {{ server }} {
+            any any;
+            facility-override {{ syslog_facility }};
+        }
+        {%- endfor %}
+        /* Non-network syslog */
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file filter {
+            firewall any;
+            archive size 10000000 files 7 world-readable;
+        }
+    }

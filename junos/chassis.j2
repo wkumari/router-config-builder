@@ -1,0 +1,15 @@
+## chassis.j2
+replace:
+chassis {
+    {%- if chassis is defined %}
+        {# blank line for formatting #}
+        {%- if chassis == "mx240" %}{% include 'chassis-mx240.j2' %}
+        {%- elif chassis == "mx104" %}{% include 'chassis-mx104.j2' %}
+        {%- elif chassis == "mx204" %}{% include 'chassis-mx204.j2' %}
+        {%- elif chassis == "ex4200" %}{% include 'chassis-ex4200.j2' %}
+        {%- else %} {% raise "Only mx104, mx240, mx204, ex4200 chassis currently supported" %}
+        {%- endif %}
+    {%- else %}
+        {% raise "chassis must be defined!" %}
+    {%- endif %}
+}

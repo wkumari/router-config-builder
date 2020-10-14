@@ -1,0 +1,50 @@
+## system.j2
+system {
+    host-name {{ hostname }};
+    domain-name {{ domain }};
+    no-redirects;
+    internet-options {
+         path-mtu-discovery;
+    }
+    time-zone UTC;
+    ports {
+        auxiliary type vt100;
+    }
+    root-authentication {
+        encrypted-password {{ root_password }};
+    }
+    name-server {
+        {%- for nameserver in nameservers %}
+        {{ nameserver }};
+        {%- endfor %}
+    }
+    scripts {
+        commit {
+            file int-addr-v4.slax;
+            file int-addr-v6.slax;
+        }
+    }
+    {% include 'system_login.j2' %}
+    {% include 'system_services.j2' %}
+    {% include 'system_syslog.j2' %}
+    commit synchronize;
+    ddos-protection {
+        protocols {
+            sample {
+                aggregate {
+                    bandwidth 2000;
+                    burst 500;
+                }
+                host {
+                    bandwidth 2000;
+                    burst 500;
+                }
+            }
+        }
+    }
+    ntp {
+        {%- for server in ntp %}
+        server {{ server }};
+        {%- endfor %}
+    }
+}
