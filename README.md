@@ -16,7 +16,7 @@ This was originally written to build JunOS router configs for the IETF Meeting n
 
 ## Quick start:
 
-**Note**: This should generally be run from the same directory where the templates are, as it makes tab-completion work.
+**Note**: This should generally be run from within the same directory where the templates are, as it makes tab-completion work.
 
 See also 
 
