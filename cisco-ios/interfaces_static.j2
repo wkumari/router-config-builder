@@ -1,0 +1,214 @@
+interface Port-channel1
+ description STATIC: Server : vmhost-7
+ switchport
+ switchport trunk allowed vlan {{ vmhost_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ ip dhcp snooping trust
+!
+interface Port-channel2
+ description STATIC: Server : vmhost-8
+ switchport
+ switchport trunk allowed vlan {{ vmhost_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ ip dhcp snooping trust
+!
+interface Port-channel3
+ description STATIC: Server : vmhost-9
+ switchport
+ switchport trunk allowed vlan {{ vmhost_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ ip dhcp snooping trust
+!
+interface Port-channel7
+ description STATIC: Core : RtrNAT64B
+ switchport
+ switchport trunk allowed vlan {{ nat64_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ spanning-tree portfast edge trunk
+!
+interface Port-channel8
+ description STATIC: Core : RtrNAT64A
+ switchport
+ switchport trunk allowed vlan {{ nat64_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ spanning-tree portfast edge trunk
+!
+interface Port-channel11
+ description STATIC: Core : To WLC-1
+ switchport
+ switchport trunk allowed vlan {{ wireless_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ mtu 1586
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface Port-channel12
+ description STATIC: Core : To WLC-2
+ switchport
+ switchport trunk allowed vlan {{ wireless_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ mtu 1586
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface Port-channel15
+ description STATIC: Core : RtrA:ae0
+ switchport
+ switchport trunk allowed vlan {{ rtr_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ ipv6 nd raguard attach-policy {{ raguard_uplink_policy }}
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface Port-channel16
+ description STATIC: Core : RtrB:ae0
+ switchport
+ switchport trunk allowed vlan {{ rtr_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ ipv6 nd raguard attach-policy {{ raguard_uplink_policy }}
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+{% for switch in switches %}
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/1
+ description STATIC: Server : vmhost-7
+ switchport trunk allowed vlan {{ vmhost_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 1 mode on
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/2
+ description STATIC: Server : vmhost-8
+ switchport trunk allowed vlan {{ vmhost_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 2 mode on
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/3
+ description STATIC: Server : vmhost-6
+ switchport trunk allowed vlan {{ vmhost_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-protocol lacp
+ channel-group 3 mode active
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/7
+ description STATIC: Core : RtrNAT64A:ethernet9
+ switchport trunk allowed vlan {{ nat64_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 7 mode active
+ spanning-tree portfast edge trunk
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/8
+ description STATIC: Core : RtrNAT64B:ethernet9
+ switchport trunk allowed vlan {{ nat64_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ shutdown
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 8 mode active
+ spanning-tree portfast edge trunk
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/11
+ description STATIC: Core : To WLC-1
+ switchport trunk allowed vlan {{ wireless_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ mtu 1586
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 11 mode on
+ spanning-tree portfast edge trunk
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/12
+ description STATIC: Core : To WLC-2
+ switchport trunk allowed vlan {{ wireless_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ mtu 1586
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 12 mode on
+ spanning-tree portfast edge trunk
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/15
+ description STATIC: Core : RtrA:xe-0/0/0
+ switchport trunk allowed vlan {{ rtr_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 15 mode active
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface {{downlink_ethernet_name}}{{switch.number}}/{{ switch.module }}/16
+ description STATIC: Core : RtrB:xe-0/0/0
+ switchport trunk allowed vlan {{ rtr_vlans }}
+ switchport mode trunk
+ switchport nonegotiate
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ channel-group 16 mode active
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+{%- endfor %}
+!
+interface {{ downlink_ethernet_name }}1/0/4
+ description STATIC: Core : RtrHotelA
+ switchport trunk allowed vlan {{ hotel_vlans }}
+ switchport mode trunk
+ ipv6 nd raguard attach-policy {{ raguard_uplink_policy }} 
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ spanning-tree portfast edge trunk
+ spanning-tree bpdufilter enable
+ ip dhcp snooping trust
+!
+interface {{ downlink_ethernet_name }}2/0/4
+ description STATIC: Core : RtrHotelB
+ switchport trunk allowed vlan {{ hotel_vlans }}
+ switchport mode trunk
+ ipv6 nd raguard attach-policy {{ raguard_uplink_policy }}
+ snmp trap mac-notification change added
+ snmp trap mac-notification change removed
+ spanning-tree portfast edge trunk
+ spanning-tree bpdufilter enable
+ ip dhcp snooping trust

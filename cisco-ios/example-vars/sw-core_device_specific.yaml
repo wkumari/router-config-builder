@@ -1,0 +1,19 @@
+---
+hostname: sw-core
+
+# Stackwise
+stackwise_domain: 1
+vsl_interfaces:
+  - HundredGigE1/0/51
+  - HundredGigE1/0/52
+  - HundredGigE2/0/51
+  - HundredGigE2/0/52
+
+# Interface
+mgmt_intf: Vlan224
+mgmt_ipv4: "10.10.10.10 255.255.252.0"
+
+# Switch
+switches:
+  - { number: 1, module: 0 }
+  - { number: 2, module: 0 }

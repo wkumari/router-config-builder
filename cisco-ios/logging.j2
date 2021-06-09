@@ -1,0 +1,8 @@
+logging buffered 16384
+logging rate-limit 10000
+no logging console
+logging event link-status global
+!
+{% for host in syslog_hosts %}
+logging host {{ host }}
+{%- endfor %}

@@ -1,0 +1,10 @@
+{% for vlan in vlans %}
+vlan {{ vlan.id }}
+ name {{ vlan.name }}
+ {%- if vlan.shutdown is defined %} 
+ shutdown
+ {%- endif %}
+ {%- if vlan.remote_span is defined %}
+ remote-span
+ {%- endif %}
+{%- endfor %}
