@@ -1,0 +1,17 @@
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ login authentication CONSOLE
+ stopbits 1
+line vty 0 4
+ exec-timeout 0 0
+ history size 100
+ transport preferred ssh
+ transport input ssh
+ escape-character 3
+line vty 5 15
+ exec-timeout 30 0
+ history size 100
+ transport preferred ssh
+ transport input ssh
+ escape-character 3

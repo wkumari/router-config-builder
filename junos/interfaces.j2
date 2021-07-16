@@ -148,7 +148,6 @@ interfaces {
                 port-mode {{ unit.port_mode }};
                 {%- endif %}
                 vlan  {
-                    {# If ther is only one vlan, we generate "members XXX;" else "members [XXX, YYY, ]" #}
                     {%- if unit.vlans|count == 1 %}
                     members {{ unit.vlans[0] }};
                     {%- else %}

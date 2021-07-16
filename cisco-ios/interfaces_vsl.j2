@@ -1,0 +1,7 @@
+{%- if stackwise_domain is defined %}
+{% for interface in vsl_interfaces %}
+interface {{ interface }}
+ description STATIC: Core : ###DO NOT TOUCH - VSL LINK###
+ stackwise-virtual link 1
+{%- endfor %}
+{%- endif %}
