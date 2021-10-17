@@ -51,6 +51,12 @@ interfaces {
             {%- if unit.proxy_arp is defined %}
             proxy-arp unrestricted;
             {%- endif %}
+            {%- if unit.tunnel is defined %}
+                tunnel {
+                    source {{ unit.tunnel.source }};
+                    destination {{ unit.tunnel.destination }};
+                }
+            {%- endif %}
             {%- if unit.v4 is defined %}
             family inet {
                 {%- if unit.filters is defined %}
