@@ -83,6 +83,9 @@ interfaces {
                 }
                 {%- endif %} {# if unit.sampling.input #}
                 {%- endif %} {# if link sampling #}
+                {%- if unit.mtu is defined %}
+                    mtu {{ unit.mtu }};
+                {%- endif %} {# unit.mtu #}
                 {%- if unit.vrrp is defined and unit.vrrp.v4 is defined %}
                 address {{ unit.v4 }} {
                     vrrp-group {{ unit.vrrp.group }} {
