@@ -174,8 +174,11 @@ def read_config_data(path):
     devices = {}
     config_data = {}
     for filename in glob.glob(path + "/*.yaml"):
-        debug ("Trying to read: %s" % filename)
+        #debug ("Trying to read: %s" % filename)
         new = yaml.load(open(filename), Loader=Loader)
+        if new is None:
+            abort("Could not load configuration from %s. Invalid YAML or empty file.")
+        debug ("Read %s elements from %s" % (len(new), filename))
 
         # Is this a device specific config?
         if '_device_specific.yaml' in filename:
@@ -213,7 +216,6 @@ def open_template(path, name):
         undefined=StrictUndefined,
         extensions=[RaiseExtension])
     template = env.get_template(name + '.j2')
-    debug ("Template: %s" % template)
     return template
 
 
@@ -227,9 +229,12 @@ def render (devices, template, config_data):
     """
     if opts.device:
         opts.device=opts.device.replace('./', '/', 1)
+        debug("Device we are building for: %s" % opts.device)
         if opts.device and opts.device in devices.keys():
             # Add the device specific bits to the config.
             device_specific = devices[opts.device]
+            if not device_specific:
+                abort("The length of the device specific data for %s is 0. Perhaps empty file?!" % opts.device)
             combine_config_data (config_data, device_specific, opts.device)
         else:
             abort("Couldn't find a _device_specific.yaml for %s" % opts.device)
