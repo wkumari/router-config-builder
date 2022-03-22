@@ -239,7 +239,7 @@ def render (devices, template, config_data):
         else:
             abort("Couldn't find a _device_specific.yaml for %s" % opts.device)
 
-    rendered = template.render(config_data)
+    rendered = template.render(config_data, trim_blocks=True, lstrip_blocks=True)
     print(rendered)
 
 
