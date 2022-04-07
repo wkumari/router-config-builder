@@ -86,8 +86,9 @@ interfaces {
                 {%- if unit.mtu is defined %}
                     mtu {{ unit.mtu }};
                 {%- endif %} {# unit.mtu #}
-                {%- if unit.vrrp is defined and unit.vrrp.v4 is defined %}
-                address {{ unit.v4 }} {
+                address {{unit.v4}}
+                {% if unit.vrrp-groups is defined %}
+                {
                     vrrp-group {{ unit.vrrp.group }} {
                         virtual-address {{ unit.vrrp.v4 }};
                         {%- if vrrp_priority is defined %} {# Device level setting #}
@@ -97,7 +98,7 @@ interfaces {
                     }
                 }
                 {%- else %}
-                address {{ unit.v4 }};
+                ;
                 {%- endif %}
             }
             {%- endif %}  {# if unit.v4 is defined #}
