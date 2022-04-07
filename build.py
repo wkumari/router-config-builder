@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """This reads a set of templates and parameters and builds JunOS configuration."""
 #
 # In order to make this easy to use, there are a number of
