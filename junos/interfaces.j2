@@ -12,9 +12,9 @@ interfaces {
         {%- endif %} {# link.mtu #}
         {%- if link.flexible is defined and link.flexible is sameas true %}
         flexible-vlan-tagging;
-          {%- if link.native_vlan_id is defined %}
+        {%- if link.native_vlan_id is defined %}
         native-vlan-id {{link.native_vlan_id }};
-          {%- endif %} {# link.native_vlan_id #}
+        {%- endif %} {# link.native_vlan_id #}
         {%- endif %} {# link.flexible #}
         {%- if link.speed is defined %}
             speed {{ link.speed }};
@@ -57,7 +57,7 @@ interfaces {
                     destination {{ unit.tunnel.destination }};
                 }
             {%- endif %}
-            {%- if unit.v4 is defined %}
+            {%- if unit.v4 is defined or unit.filters is defined %}
             family inet {
                 {%- if unit.filters is defined %}
                 {%- if unit.filters.input is defined or unit.filters.output is defined %}
@@ -96,7 +96,7 @@ interfaces {
                         accept-data;
                     }
                 }
-                {%- else %}
+                {%- elif unit.v4 is defined %}
                 address {{ unit.v4 }};
                 {%- endif %}
             }
