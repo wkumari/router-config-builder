@@ -217,7 +217,10 @@ def read_config_data(path):
                 device_name = os.path.splitext(base)[0]
                 device_name = device_name.replace("_device_specific", "")
                 # And add it (and its config) to the devices dictionary.
-                devices[device_name] = new
+                if device_name not in devices:
+                    devices[device_name] = new
+                else:
+                    combine_config_data(devices[device_name], new, filename)
             else:
                 combine_config_data(config_data, new, filename)
         debug("Config data length: %s" % len(config_data))
