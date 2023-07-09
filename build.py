@@ -19,11 +19,6 @@ import os
 import sys
 import yaml
 
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
-
 from jinja2 import nodes, Environment, FileSystemLoader, StrictUndefined
 from jinja2.ext import Extension
 from jinja2.exceptions import TemplateRuntimeError
@@ -140,7 +135,8 @@ conventions:
         "--config_dir",
         dest="config_dir",
         default="./vars",
-        help="Directory containing config variables (.yaml",
+        action="append",
+        help="Directory containing config variables (in .yaml files).  Multiple config directories can be passed.",
     )
     options.add_option(
         "-r",
@@ -206,24 +202,25 @@ def read_config_data(path):
     """
     devices = {}
     config_data = {}
-    for filename in glob.glob(path + "/*.yaml"):
-        # debug ("Trying to read: %s" % filename)
-        new = yaml.load(open(filename), Loader=Loader)
-        if new is None:
-            abort("Could not load configuration from %s. Invalid YAML or empty file.")
-        debug("Read %s elements from %s" % (len(new), filename))
+    for p in path:
+        for filename in glob.glob(p + "/*.yaml"):
+            # debug ("Trying to read: %s" % filename)
+            new = yaml.safe_load(open(filename))
+            if new is None:
+                abort("Could not load configuration from %s. Invalid YAML or empty file." % filename)
+            debug("Read %s elements from %s" % (len(new), filename))
 
-        # Is this a device specific config?
-        if "_device_specific.yaml" in filename:
-            # Extract just the device name
-            base = os.path.basename(filename)
-            device_name = os.path.splitext(base)[0]
-            device_name = device_name.replace("_device_specific", "")
-            # And add it (and its config) to the devices dictionary.
-            devices[device_name] = new
-        else:
-            combine_config_data(config_data, new, filename)
-    debug("Config data length: %s" % len(config_data))
+            # Is this a device specific config?
+            if "_device_specific.yaml" in filename:
+                # Extract just the device name
+                base = os.path.basename(filename)
+                device_name = os.path.splitext(base)[0]
+                device_name = device_name.replace("_device_specific", "")
+                # And add it (and its config) to the devices dictionary.
+                devices[device_name] = new
+            else:
+                combine_config_data(config_data, new, filename)
+        debug("Config data length: %s" % len(config_data))
     return (devices, config_data)
 
 
