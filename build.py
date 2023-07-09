@@ -182,7 +182,7 @@ def combine_config_data(base, new, filename):
     """
     for key in new.keys():
         if key in base:
-            abort('The variable "%s" already exists in %s' % (key, filename))
+            abort('The variable "%s" loaded from %s already exists in the config data.' % (key, filename))
     return base.update(new)
 
 
