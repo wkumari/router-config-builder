@@ -134,7 +134,7 @@ conventions:
         "-c",
         "--config_dir",
         dest="config_dir",
-        default="./vars",
+        default=["./vars"],
         action="append",
         help="Directory containing config variables (in .yaml files).  Multiple config directories can be passed.",
     )
