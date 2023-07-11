@@ -18,10 +18,6 @@ import glob
 import os
 import sys
 import yaml
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
 
 from jinja2 import nodes, Environment, FileSystemLoader, StrictUndefined
 from jinja2.ext import Extension
@@ -30,6 +26,7 @@ from jinja2.exceptions import TemplateRuntimeError
 # Debug. If True then we print more stuff.
 DEBUG = False
 
+
 class Error(Exception):
     """Generic error."""
 
@@ -37,14 +34,15 @@ class Error(Exception):
 class TemplateError(Error):
     """This template throws this sort of error...."""
 
-class RaiseExtension(Extension):
-    '''Allows us to raise an exception and return a message.'''
 
-    ## Example:
+class RaiseExtension(Extension):
+    """Allows us to raise an exception and return a message."""
+
+    # Example:
     #  {%- if cup == "empty" %} {% raise "Need more coffee" %}
 
     # This is our keyword(s):
-    tags = set(['raise'])
+    tags = set(["raise"])
 
     # See also: jinja2.parser.parse_include()
     # https://stackoverflow.com/questions/21778252/how-to-raise-an-exception-in-a-jinja2-macro
@@ -55,33 +53,39 @@ class RaiseExtension(Extension):
         message_node = parser.parse_expression()
 
         return nodes.CallBlock(
-            self.call_method('_raise', [message_node], lineno=lineno),
-            [], [], [], lineno=lineno
+            self.call_method("_raise", [message_node], lineno=lineno),
+            [],
+            [],
+            [],
+            lineno=lineno,
         )
 
     def _raise(self, msg, caller):
         raise TemplateRuntimeError(msg)
 
+
 def debug(msg):
     """Iff DEBUG then we print message."""
     if opts.debug:
-        sys.stderr.write('\033[94mDEBUG: %s\n\033[0m' % msg)
+        sys.stderr.write("\033[94mDEBUG: %s\n\033[0m" % msg)
 
 
 def log(msg):
     """If --verbose, print the message"""
     if opts.verbose:
-        sys.stderr.write('\033[92mLOG: %s\n\033[0m' % msg)
+        sys.stderr.write("\033[92mLOG: %s\n\033[0m" % msg)
 
 
 def abort(msg):
     """Print error message and abort"""
-    sys.stderr.write('\033[91mABORT: %s\n\033[0m' % msg)
+    sys.stderr.write("\033[91mABORT: %s\n\033[0m" % msg)
     sys.exit(-1)
+
 
 def output(msg):
     """Simply prints the message provided."""
-    sys.stdout.write('\033[93m%s\n\033[0m' % msg)
+    sys.stdout.write("\033[93m%s\n\033[0m" % msg)
+
 
 def parse_options():
     """Parses the command line options."""
@@ -110,36 +114,61 @@ conventions:
   """
 
     options = OptionParser(usage=usage)
-    options.add_option('-v', '--verbose', dest='verbose',
-                       action='store_true',
-                       default=False,
-                       help='Be more verbose in output.')
-    options.add_option('-d', '--debug', dest='debug',
-                       action='store_true',
-                       default=DEBUG,
-                       help='Debug output.')
-    options.add_option('-c', '--config_dir', dest='config_dir',
-                       default="./vars",
-                       help='Directory containing config variables (.yaml')
-    options.add_option('-r', '--router', dest='device',
-                       default="",
-                       help='Make config for this specific device.')
-    options.add_option('-t', '--templates', dest='template_dir',
-                       default=".",
-                       help='Directory containing templates. Default "."')
-    options.add_option('-p', '--platform', dest='platform',
-                       default="junos",
-                       help='Directory containing *base* templates. Default "junos"')
+    options.add_option(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="Be more verbose in output.",
+    )
+    options.add_option(
+        "-d",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        default=DEBUG,
+        help="Debug output.",
+    )
+    options.add_option(
+        "-c",
+        "--config_dir",
+        dest="config_dir",
+        default=["./vars"],
+        action="append",
+        help="Directory containing config variables (in .yaml files).  Multiple config directories can be passed.",
+    )
+    options.add_option(
+        "-r",
+        "--router",
+        dest="device",
+        default="",
+        help="Make config for this specific device.",
+    )
+    options.add_option(
+        "-t",
+        "--templates",
+        dest="template_dir",
+        default=".",
+        help='Directory containing templates. Default "."',
+    )
+    options.add_option(
+        "-p",
+        "--platform",
+        dest="platform",
+        default="junos",
+        help='Directory containing *base* templates. Default "junos"',
+    )
 
     (opts, args) = options.parse_args()
     if not args:
         options.print_help()
-        abort ("\nYou also need to supply a template name - perhaps all.j2 ?")
-    if opts.device.startswith ('vars/') or opts.device.startswith ('./'):
-        log ('You supplied a path to the device name  - cleaning up')
-        opts.device = opts.device.replace('./', '')
-        opts.device = opts.device.replace('vars/', '')
-        opts.device = opts.device.replace('_device_specific.yaml', '')
+        abort("\nYou also need to supply a template name - perhaps all.j2 ?")
+    if opts.device.startswith("vars/") or opts.device.startswith("./"):
+        log("You supplied a path to the device name  - cleaning up")
+        opts.device = opts.device.replace("./", "")
+        opts.device = opts.device.replace("vars/", "")
+        opts.device = opts.device.replace("_device_specific.yaml", "")
     return opts, args
 
 
@@ -150,10 +179,10 @@ def combine_config_data(base, new, filename):
 
     Returns:
         Dictionary of base + new
-        """
+    """
     for key in new.keys():
         if key in base:
-            abort("The variable \"%s\" already exists in %s" % (key, filename))
+            abort('The variable "%s" loaded from %s already exists in the config data.' % (key, filename))
     return base.update(new)
 
 
@@ -173,24 +202,28 @@ def read_config_data(path):
     """
     devices = {}
     config_data = {}
-    for filename in glob.glob(path + "/*.yaml"):
-        #debug ("Trying to read: %s" % filename)
-        new = yaml.load(open(filename), Loader=Loader)
-        if new is None:
-            abort("Could not load configuration from %s. Invalid YAML or empty file.")
-        debug ("Read %s elements from %s" % (len(new), filename))
+    for p in path:
+        for filename in glob.glob(p + "/*.yaml"):
+            # debug ("Trying to read: %s" % filename)
+            new = yaml.safe_load(open(filename))
+            if new is None:
+                abort("Could not load configuration from %s. Invalid YAML or empty file." % filename)
+            debug("Read %s elements from %s" % (len(new), filename))
 
-        # Is this a device specific config?
-        if '_device_specific.yaml' in filename:
-            # Extract just the device name
-            base=os.path.basename(filename)
-            device_name = os.path.splitext(base)[0]
-            device_name = device_name.replace('_device_specific','')
-            # And add it (and its config) to the devices dictionary.
-            devices[device_name] = new
-        else:
-            combine_config_data(config_data, new, filename)
-    debug ("Config data length: %s" % len(config_data))
+            # Is this a device specific config?
+            if "_device_specific.yaml" in filename:
+                # Extract just the device name
+                base = os.path.basename(filename)
+                device_name = os.path.splitext(base)[0]
+                device_name = device_name.replace("_device_specific", "")
+                # And add it (and its config) to the devices dictionary.
+                if device_name not in devices:
+                    devices[device_name] = new
+                else:
+                    combine_config_data(devices[device_name], new, filename)
+            else:
+                combine_config_data(config_data, new, filename)
+        debug("Config data length: %s" % len(config_data))
     return (devices, config_data)
 
 
@@ -209,17 +242,18 @@ def open_template(path, name):
     # Script dir
     script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-    env = Environment(loader = FileSystemLoader([path,
-            os.path.join(script_dir, opts.platform)]),
+    env = Environment(
+        loader=FileSystemLoader([path, os.path.join(script_dir, opts.platform)]),
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
-        extensions=[RaiseExtension])
-    template = env.get_template(name + '.j2')
+        extensions=[RaiseExtension],
+    )
+    template = env.get_template(name + ".j2")
     return template
 
 
-def render (devices, template, config_data):
+def render(devices, template, config_data):
     """Renders the template with the provided config data.
 
     Basically a wrapper around template.render
@@ -228,14 +262,14 @@ def render (devices, template, config_data):
         prints filled in template
     """
     if opts.device:
-        opts.device=opts.device.replace('./', '/', 1)
+        opts.device = opts.device.replace("./", "/", 1)
         debug("Device we are building for: %s" % opts.device)
         if opts.device and opts.device in devices.keys():
             # Add the device specific bits to the config.
             device_specific = devices[opts.device]
             if not device_specific:
                 abort("The length of the device specific data for %s is 0. Perhaps empty file?!" % opts.device)
-            combine_config_data (config_data, device_specific, opts.device)
+            combine_config_data(config_data, device_specific, opts.device)
         else:
             abort("Couldn't find a _device_specific.yaml for %s" % opts.device)
 
@@ -247,7 +281,7 @@ def main():
     """pylint FTW"""
     (device_config, config_data) = read_config_data(opts.config_dir)
     template = open_template(opts.template_dir, args[0])
-    render (device_config, template, config_data)
+    render(device_config, template, config_data)
 
 
 if __name__ == "__main__":
