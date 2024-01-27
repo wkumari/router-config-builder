@@ -8,6 +8,7 @@ chassis {
         {%- elif chassis == "mx204" %}{% include 'chassis-mx204.j2' %}
         {%- elif chassis == "ex4200" %}{% include 'chassis-ex4200.j2' %}
         {%- elif chassis == "ex4550" %}{% include 'chassis-ex4200.j2' %}
+        {%- elif chassis == "srx4600"%}{% include 'chassis-srx4600.j2' %}
         {%- else %} {% raise "Only mx104, mx240, mx204, ex4200, ex4550 chassis currently supported" %}
         {%- endif %}
     {%- else %}
