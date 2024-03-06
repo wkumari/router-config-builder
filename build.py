@@ -247,7 +247,7 @@ def open_template(path, name):
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
-        extensions=[RaiseExtension],
+        extensions=[RaiseExtension, 'jinja2.ext.do'],
     )
     template = env.get_template(name + ".j2")
     return template
