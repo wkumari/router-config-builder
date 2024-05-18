@@ -16,10 +16,11 @@
 from optparse import OptionParser
 import glob
 import os
+import pprint
 import sys
 import yaml
 
-from jinja2 import nodes, Environment, FileSystemLoader, StrictUndefined
+from jinja2 import nodes, Environment, FileSystemLoader, StrictUndefined, Template
 from jinja2.ext import Extension
 from jinja2.exceptions import TemplateRuntimeError
 
@@ -72,8 +73,13 @@ def debug(msg):
 
 def log(msg):
     """If --verbose, print the message"""
-    if opts.verbose:
+    if opts.verbose or opts.debug:
         sys.stderr.write("\033[92mLOG: %s\n\033[0m" % msg)
+
+
+def warn(msg):
+    """Print warning message"""
+    sys.stderr.write("\033[91mWARN: %s\n\033[0m" % msg)
 
 
 def abort(msg):
@@ -107,9 +113,9 @@ conventions:
 
   Example:
       %prog -r rtr1 all.j2
-         Reads the YAML files in ./vars/*, and rtr1_device_specific.yaml
-         It takes the paramters in these, and puts then into the templates in
-         all.j2.
+        Reads the YAML files in ./vars/*, and rtr1_device_specific.yaml
+        It takes the paramters in these, and puts then into the templates in
+        all.j2.
 
   """
 
@@ -159,6 +165,20 @@ conventions:
         default="junos",
         help='Directory containing *base* templates. Default "junos"',
     )
+    options.add_option(
+        "-m",
+        "--map",
+        dest="map_filename",
+        default="",
+        help='File containing vlan map. Default ""',
+    )
+    options.add_option(
+        "-i",
+        "--interface_template",
+        dest="interface_template",
+        default="",
+        help="File containing interface template. REQUIRED if --map is used.",
+    )
 
     (opts, args) = options.parse_args()
     if not args:
@@ -169,6 +189,8 @@ conventions:
         opts.device = opts.device.replace("./", "")
         opts.device = opts.device.replace("vars/", "")
         opts.device = opts.device.replace("_device_specific.yaml", "")
+    if opts.map_filename and not opts.interface_template:
+        abort("You must supply an interface template if you are using a vlan map.")
     return opts, args
 
 
@@ -186,7 +208,25 @@ def combine_config_data(base, new, filename):
     return base.update(new)
 
 
-def read_config_data(path):
+def build_interface_from_template(filename, interface, vlan_name, desc="No description"):
+    """This builds a default interface.
+
+    This takes a filename to an interface template and an interface name, and
+    returns a dictionary of the interface.
+
+    Returns:
+        Dictionary of interface, built from the template.
+    """
+    with open(filename) as f:
+        template = Template(f.read())
+    if template is None:
+        abort("Could not load interface template from %s. Invalid Jinja or empty file." % filename)
+    rendered = template.render(interface=interface, vlan_name=vlan_name, desc=desc)
+    int_dict = yaml.safe_load(rendered)
+    return int_dict
+
+
+def read_config_data(path, vlan_map):
     """Reads the config data from the YAML files.
 
     This returns a dictionary of device specific config, and a dictionary of
@@ -195,6 +235,8 @@ def read_config_data(path):
 
     Args:
         path: A String containing templates dir (vars dir is a subdir of this).
+        vlan_map: A dictionary containing the vlan map. A vlan_map is a dictionary
+                  of device -> vlan -> interface -> description.
 
     Returns:
         devices: {"rtra": {"hostname:": "foo"}, "rtrb": ...}
@@ -204,7 +246,6 @@ def read_config_data(path):
     config_data = {}
     for p in path:
         for filename in glob.glob(p + "/*.yaml"):
-            # debug ("Trying to read: %s" % filename)
             new = yaml.safe_load(open(filename))
             if new is None:
                 abort("Could not load configuration from %s. Invalid YAML or empty file." % filename)
@@ -223,8 +264,73 @@ def read_config_data(path):
                     combine_config_data(devices[device_name], new, filename)
             else:
                 combine_config_data(config_data, new, filename)
-        debug("Config data length: %s" % len(config_data))
+
+    # If we have a vlan map, we create interface configs from it, and add them
+    # to the device specific config.
+    #
+    # NOTE: This section seems somewhat Juniper specific....
+    if vlan_map:
+        # E.g:  {'sw1': {'ge-1/1/1': {'To bob': 'VLAN2'}, 'ge-1/2/2': {'To fred': 'VLAN99'}}
+        for device in vlan_map.keys():
+
+            if device not in devices:
+                abort("Couldn't find a _device_specific.yaml for %s. Cannot continue." % device)
+            else:
+                # Check if the device has an "interfaces" key, and if not, add it.
+                if "interfaces" not in devices[device]:
+                    abort("Looks like %s had no interfaces. Cowardly refusing to continue..." % device)
+                    devices[device]["interfaces"] = {}
+
+                # e.g: {'eth1': 'AUTH-SERVERS', 'eth2': 'AUTH-SERVERS'}
+                for interface, vlan_desc in vlan_map[device].items():
+                    # Check if the interface is already defined in the device specific config.
+                    # This is a list of dictionaries, so we need to iterate over it.
+                    for i in devices[device]["interfaces"]:
+                        if interface in i["interface"]:
+                            abort(
+                                "Looks like %s already had an interface %s. You cannot define it in both _device_specific and vlan map."
+                                % (device, interface)
+                            )
+                    if len(vlan_desc) != 1:
+                        abort(
+                            "%s had more than one VLAN defined for interface %s in the VLAN Map - %s. This is not yet supported."
+                            "" % (device, interface, vlan_desc)
+                        )
+                    (desc, vlan) = vlan_desc.popitem()
+                    built = build_interface_from_template(opts.interface_template, interface, vlan, desc)
+                    devices[device]["interfaces"].append(built)
     return (devices, config_data)
+
+
+def read_vlan_map(map_filename):
+    """
+    Reads the vlan map from the file and converts it into a device specific map.
+    Basically, this pivots the config from VLAN -> device into device -> VLAN.
+
+    Args:
+        map_file: A String containing the filename of the vlan map.
+    """
+    # The format of the vlan map is in the
+    device_map = {}
+    with open(map_filename, "r") as map_file:
+        map_file = yaml.safe_load(map_file)
+        if map_file is None:
+            abort("Could not load interface map from %s. Invalid YAML or empty file." % map_filename)
+        debug("Read %s elements from %s" % (len(map_file), map_filename))
+
+    # vlan_map is VLAN -> device -> Interface, and we need to pivot it to device -> VLAN -> Interface
+    for vlan in map_file["mapping"]:
+        vlan_name = vlan["name"]
+        for device in vlan["devices"]:
+            if device not in device_map:
+                device_map[device] = {}
+            # A list of interfaces, desc
+            for interface, desc in vlan["devices"][device].items():
+                if interface not in device_map[device]:
+                    device_map[device][interface] = {}
+                device_map[device][interface][desc] = vlan_name
+    return device_map
+    # Now I will try do this again using a template instead.
 
 
 def open_template(path, name):
@@ -247,7 +353,7 @@ def open_template(path, name):
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
-        extensions=[RaiseExtension, 'jinja2.ext.do'],
+        extensions=[RaiseExtension, "jinja2.ext.do"],
     )
     template = env.get_template(name + ".j2")
     return template
@@ -279,7 +385,10 @@ def render(devices, template, config_data):
 
 def main():
     """pylint FTW"""
-    (device_config, config_data) = read_config_data(opts.config_dir)
+    vlan_map = {}
+    if opts.map_filename:
+        vlan_map = read_vlan_map(opts.map_filename)
+    (device_config, config_data) = read_config_data(opts.config_dir, vlan_map)
     template = open_template(opts.template_dir, args[0])
     render(device_config, template, config_data)
 
