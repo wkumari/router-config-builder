@@ -4,7 +4,7 @@ system {
     domain-name {{ domain }};
     no-redirects;
     internet-options {
-         path-mtu-discovery;
+          path-mtu-discovery;
     }
     time-zone UTC;
     ports {
@@ -30,6 +30,16 @@ system {
     commit synchronize;
     ddos-protection {
         protocols {
+            igmp {
+                aggregate {
+                    bandwidth 3000;
+                    burst 200;
+                    fpc 0 {
+                        bandwidth-scale 50;
+                        hostbound-queue 7;
+                    }
+                }
+            }
             sample {
                 aggregate {
                     bandwidth 2000;
