@@ -179,6 +179,14 @@ conventions:
         default="",
         help="File containing interface template. REQUIRED if --map is used.",
     )
+    options.add_option(
+        "-O",
+        "--allow_override",
+        dest="allow_override",
+        action="store_true",
+        default=False,
+        help="Allow variables from more specific files to override base variables (default: False)",
+    )
 
     (opts, args) = options.parse_args()
     if not args:
@@ -194,7 +202,7 @@ conventions:
     return opts, args
 
 
-def combine_config_data(base, new, filename):
+def combine_config_data(base, new, filename, override=False):
     """This merges the new config data into the base.
 
     This takes 2 dictionaries and merges them, aborting on error.
@@ -203,8 +211,9 @@ def combine_config_data(base, new, filename):
         Dictionary of base + new
     """
     for key in new.keys():
-        if key in base:
-            abort('The variable "%s" loaded from %s already exists in the config data.' % (key, filename))
+        if not override:
+            if key in base:
+                abort('The variable "%s" loaded from %s already exists in the config data.' % (key, filename))
     return base.update(new)
 
 
@@ -226,7 +235,7 @@ def build_interface_from_template(filename, interface, vlan_name, desc="No descr
     return int_dict
 
 
-def read_config_data(path, vlan_map):
+def read_config_data(path, vlan_map, override=False):
     """Reads the config data from the YAML files.
 
     This returns a dictionary of device specific config, and a dictionary of
@@ -261,9 +270,9 @@ def read_config_data(path, vlan_map):
                 if device_name not in devices:
                     devices[device_name] = new
                 else:
-                    combine_config_data(devices[device_name], new, filename)
+                    combine_config_data(devices[device_name], new, filename, override)
             else:
-                combine_config_data(config_data, new, filename)
+                combine_config_data(config_data, new, filename, override)
 
     # If we have a vlan map, we create interface configs from it, and add them
     # to the device specific config.
@@ -388,7 +397,7 @@ def main():
     vlan_map = {}
     if opts.map_filename:
         vlan_map = read_vlan_map(opts.map_filename)
-    (device_config, config_data) = read_config_data(opts.config_dir, vlan_map)
+    (device_config, config_data) = read_config_data(opts.config_dir, vlan_map, opts.allow_override)
     template = open_template(opts.template_dir, args[0])
     render(device_config, template, config_data)
 
