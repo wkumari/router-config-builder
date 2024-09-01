@@ -272,7 +272,7 @@ def read_config_data(path, vlan_map, override=False):
                 else:
                     combine_config_data(devices[device_name], new, filename, override)
             else:
-                combine_config_data(config_data, new, filename, override)
+                combine_config_data(config_data, new, filename)
 
     # If we have a vlan map, we create interface configs from it, and add them
     # to the device specific config.
@@ -384,7 +384,7 @@ def render(devices, template, config_data):
             device_specific = devices[opts.device]
             if not device_specific:
                 abort("The length of the device specific data for %s is 0. Perhaps empty file?!" % opts.device)
-            combine_config_data(config_data, device_specific, opts.device)
+            combine_config_data(config_data, device_specific, opts.device, opts.allow_override)
         else:
             abort("Couldn't find a _device_specific.yaml for %s" % opts.device)
 
