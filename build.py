@@ -210,8 +210,8 @@ def combine_config_data(base, new, filename, override=False):
     Returns:
         Dictionary of base + new
     """
-    for key in new.keys():
-        if not override:
+    if not override:
+        for key in new.keys():
             if key in base:
                 abort('The variable "%s" loaded from %s already exists in the config data.' % (key, filename))
     return base.update(new)
