@@ -1,4 +1,10 @@
     ## chassis-srx4600.j2
+    icmp {
+      per-iff-rate-limit 500;
+    }
+    icmp6 {
+      per-iff-rate-limit 500;
+    }
     aggregated-devices {
       ethernet {
           device-count 1;
