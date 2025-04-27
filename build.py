@@ -255,6 +255,10 @@ def read_config_data(path, vlan_map, override=False):
     config_data = {}
     for p in path:
         for filename in glob.glob(p + "/*.yaml"):
+            # Ignore the device specific files unless we are building for that device.
+            if "_device_specific.yaml" in filename and opts.device and opts.device not in filename:
+                debug("Skipping %s as it is not for %s" % (filename, opts.device))
+                continue
             new = yaml.safe_load(open(filename))
             if new is None:
                 abort("Could not load configuration from %s. Invalid YAML or empty file." % filename)
@@ -262,6 +266,8 @@ def read_config_data(path, vlan_map, override=False):
 
             # Is this a device specific config?
             if "_device_specific.yaml" in filename:
+                # If so, we need to check if it is for the device we are
+                # building for.
                 # Extract just the device name
                 base = os.path.basename(filename)
                 device_name = os.path.splitext(base)[0]
@@ -325,7 +331,7 @@ def read_vlan_map(map_filename):
         map_file = yaml.safe_load(map_file)
         if map_file is None:
             abort("Could not load interface map from %s. Invalid YAML or empty file." % map_filename)
-        debug("Read %s elements from %s" % (len(map_file), map_filename))
+        debug("Read %s VLAN map elements from %s" % (len(map_file), map_filename))
 
     # vlan_map is VLAN -> device -> Interface, and we need to pivot it to device -> VLAN -> Interface
     for vlan in map_file["mapping"]:
