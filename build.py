@@ -14,6 +14,9 @@
 
 
 from optparse import OptionParser
+from datetime import datetime
+from datetime import timezone
+import locale
 import glob
 import os
 import pprint
@@ -348,6 +351,28 @@ def read_vlan_map(map_filename):
     # Now I will try do this again using a template instead.
 
 
+def environment():
+    """Fills in some useful environment information.
+    Returns:
+        A dictionary of environment variables.
+    """
+    env = {}
+    env["hostname"] = os.uname()[1]
+    env["username"] = os.getenv("USER")
+    env["platform"] = opts.platform
+    env["config_dir"] = opts.config_dir
+    env["template_dir"] = opts.template_dir
+    env["device"] = opts.device
+    env["map_filename"] = opts.map_filename
+    env["interface_template"] = opts.interface_template
+    env["allow_override"] = opts.allow_override
+    env["debug"] = opts.debug
+    env["verbose"] = opts.verbose
+    env["script_dir"] = os.path.dirname(os.path.realpath(sys.argv[0]))
+    env["timestamp"] = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+    return env
+
+
 def open_template(path, name):
     """Opens the named template
 
@@ -394,12 +419,16 @@ def render(devices, template, config_data):
         else:
             abort("Couldn't find a _device_specific.yaml for %s" % opts.device)
 
+    # Add the environment to the config data.
+    config_data["environment"] = environment()
     rendered = template.render(config_data, trim_blocks=True, lstrip_blocks=True)
     print(rendered)
 
 
 def main():
     """pylint FTW"""
+    # Set the locale to the user's default setting (e.g. LANG=en_US.UTF-8)
+    locale.setlocale(locale.LC_ALL, "")
     vlan_map = {}
     if opts.map_filename:
         vlan_map = read_vlan_map(opts.map_filename)
