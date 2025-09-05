@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """This reads a set of templates and parameters and builds JunOS configuration."""
 #
+# NOTE:
+# This is basically just a simple wrapper, which reads, inherits from, and then
+# renders Jinja2 templates. All of the "clever" bits are implemented there.
+# If you are hoping to understand / improve / solve anything, you should
+# really be looking in the templates and YAML config.!
+#
 # In order to make this easy to use, there are a number of
 # conventions:
 #  - by default, configuration parameters are in ./vars
@@ -9,6 +15,13 @@
 #    - there are only applied to <device>
 #
 # Templates are stored in the main directory, and are written in Jinja2.
+# Notes:
+#  - The templates can use any Jinja2 features, including macros and includes.
+#  - The templates are rendered with the parameters from the YAML files.
+#  - There are base Junos and Cisco IOS templates, and they are designed to be
+#    overridden / inherited from. For example, the .../junos/chassis-srx4600.j2
+#    base template is overridden for the IETF network with different ICMP, AE,
+#    PIC/FPC mapping and other parameters.
 #
 # Copyright 2018 Warren Kumari <warren@kumari.net>
 
