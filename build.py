@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """This reads a set of templates and parameters and builds JunOS configuration."""
+
 #
 # NOTE:
 # This is basically just a simple wrapper, which reads, inherits from, and then
@@ -204,7 +205,7 @@ conventions:
         help="Allow variables from more specific files to override base variables (default: False)",
     )
 
-    (opts, args) = options.parse_args()
+    opts, args = options.parse_args()
     if not args:
         options.print_help()
         abort("\nYou also need to supply a template name - perhaps all.j2 ?")
@@ -327,7 +328,7 @@ def read_config_data(path, vlan_map, override=False):
                             "%s had more than one VLAN defined for interface %s in the VLAN Map - %s. This is not yet supported."
                             "" % (device, interface, vlan_desc)
                         )
-                    (desc, vlan) = vlan_desc.popitem()
+                    desc, vlan = vlan_desc.popitem()
                     built = build_interface_from_template(opts.interface_template, interface, vlan, desc)
                     devices[device]["interfaces"].append(built)
     return (devices, config_data)
@@ -445,7 +446,7 @@ def main():
     vlan_map = {}
     if opts.map_filename:
         vlan_map = read_vlan_map(opts.map_filename)
-    (device_config, config_data) = read_config_data(opts.config_dir, vlan_map, opts.allow_override)
+    device_config, config_data = read_config_data(opts.config_dir, vlan_map, opts.allow_override)
     template = open_template(opts.template_dir, args[0])
     render(device_config, template, config_data)
 
