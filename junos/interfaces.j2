@@ -40,6 +40,18 @@ interfaces {
                 }
 
         {%- endif %} {# gig_ether #}
+        {%- if link.ether_options is defined %}
+            ether-options {
+                {%- if link.ether_options.auto_negotiation is defined and link.ether_options.auto_negotiation is sameas true %}
+                auto-negotiation;
+                {%- endif %}
+                {%- if link.ether_options.speed is defined %}
+                speed {{ link.ether_options.speed }};
+                {%- endif %}
+                }
+
+        {%- endif %} {# ether_options #}
+
         {%- if link.units is defined %} {%- for unit in link.units %}
         unit {{ unit.id }} {
             {%- if unit.desc is defined %}

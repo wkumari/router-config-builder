@@ -1,7 +1,9 @@
     ## chassis.j2
     alarm {
+      {%- if chassis_options.management_ethernet_alarm is defined %}
         management-ethernet {
-            link-down red;
+            link-down {{ chassis_options.management_ethernet_alarm }};
         }
+      {%- endif %}
     }
     auto-image-upgrade;
