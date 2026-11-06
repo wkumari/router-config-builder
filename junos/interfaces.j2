@@ -72,13 +72,21 @@ interfaces {
             {%- if unit.v4 is defined or unit.filters is defined %}
             family inet {
                 {%- if unit.filters is defined %}
-                {%- if unit.filters.input is defined or unit.filters.output is defined %}
+                {%- if unit.filters.input is defined or unit.filters.output is defined or unit.filters.input_list is defined or unit.filters.output_list is defined%}
+                {%- if unit.filters.input is defined and unit.filters.input_list is defined %}{% raise "Cannot define both input and input_list" %}{% endif %}
+                {%- if unit.filters.output is defined and unit.filters.output_list is defined %}{% raise "Cannot define both output and output_list" %}{% endif %}
                 filter {
                     {%- if unit.filters.input is defined %}
                     input {{ unit.filters.input }};
                     {%- endif %}
                     {%- if unit.filters.output is defined %}
                     output {{ unit.filters.output }};
+                    {%- endif %}
+                    {%- if unit.filters.input_list is defined %}
+                    input-list {{ unit.filters.input_list }};
+                    {%- endif %}
+                    {%- if unit.filters.output_list is defined %}
+                    output-list {{ unit.filters.output_list }};
                     {%- endif %}
                 }
                 {%- endif %} {# if unit.filters.input #}
